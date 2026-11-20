@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>لوحة تحكم المهندس — ALKAK ERP Admin</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Cairo', system-ui, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Login Gate -->
+  <div id="adminGate" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-800 to-slate-800 mx-auto flex items-center justify-center font-extrabold text-amber-300 border border-amber-400/30">
+          ERP
+        </div>
+        <h1 class="text-lg font-extrabold text-white pt-1">لوحة المهندس المركزية</h1>
+        <p class="text-xs text-slate-400">إدارة الشركات والتراخيص وأكواد الأوفلاين — المهندس محمد سليم القاق</p>
+      </div>
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-300">كلمة سر المهندس</label>
+        <input id="gatePass" type="password" placeholder="أدخل كلمة السر..." dir="ltr" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" />
+      </div>
+      <button id="gateBtn" type="button" class="w-full py-2.5 rounded-xl bg-rose-800 hover:bg-rose-700 text-white font-bold text-sm transition cursor-pointer">
+        دخول إلى لوحة التحكم
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-gradient-to-l from-[#5A1228] to-[#1e3a5f] border-b border-white/10 px-4 py-3 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="font-extrabold text-base sm:text-lg text-white">🔐 إدارة نظام ALKAK ERP (نسخة المهندس)</h2>
+        <p class="text-[11px] text-amber-200">المهندس محمد سليم القاق — تحكم كامل بالشركات والأكواد والنسخ المحلي (USB / SD)</p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="usbSaveBtn" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer">💾 حفظ لفلاشة / SD</button>
+        <button id="usbFolderBtn" type="button" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs cursor-pointer">📁 حفظ لمجلد</button>
+        <button id="usbLoadBtn" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer">📥 استعادة من USB / SD</button>
+        <button id="refreshAllBtn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer">🔄 تحديث</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 space-y-5">
+
+    <!-- KPIs -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <div class="text-xs text-slate-400">إجمالي الشركات</div>
+        <div id="statTotal" class="text-xl font-extrabold text-white mt-1">0</div>
+      </div>
+      <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-3">
+        <div class="text-xs text-emerald-400">شركات مفعّلة</div>
+        <div id="statActive" class="text-xl font-extrabold text-emerald-400 mt-1">0</div>
+      </div>
+      <div class="bg-slate-900 border border-rose-500/30 rounded-xl p-3">
+        <div class="text-xs text-rose-400">شركات موقوفة</div>
+        <div id="statBlocked" class="text-xl font-extrabold text-rose-400 mt-1">0</div>
+      </div>
+      <div class="bg-slate-900 border border-amber-500/30 rounded-xl p-3">
+        <div class="text-xs text-amber-400">سجل الأعطال المحلية</div>
+        <div id="statErrors" class="text-xl font-extrabold text-amber-400 mt-1">0</div>
+      </div>
+    </section>
+
+    <!-- Create / Edit Company & Offline Activation Generator -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-bold text-sm text-amber-300">🏢 إنشاء / تعديل بيانات دخول شركة وتوليد كود تفعيل أوفلاين</h3>
+        <button id="clearCompanyFormBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">نموذج جديد</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <input type="hidden" id="editCompanyId" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">اسم الشركة *</label>
+            <input id="cmpName" type="text" placeholder="مثال: شركة المعري للإنتاج" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">البريد الإلكتروني الرسمي للشركة *</label>
+            <input id="cmpEmail" type="email" dir="ltr" placeholder="company@domain.com" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">كلمة سر المدير *</label>
+            <input id="cmpPass" type="text" dir="ltr" placeholder="كلمة سر المدير" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">حالة الشركة</label>
+            <select id="cmpStatus" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="active">مفعّلة ✅</option>
+              <option value="suspended">موقوفة ⛔</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+          <button id="saveCompanyBtn" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer">💾 حفظ الشركة وتوليد كود الأوفلاين</button>
+          <button id="genCodeOnlyBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer">🔑 توليد كود تفعيل أوفلاين</button>
+          <input id="generatedOfflineCode" type="text" readonly dir="ltr" placeholder="كود التفعيل الأوفلاين سيظهر هنا..." class="flex-1 rounded-xl bg-slate-950 border border-amber-500/40 px-3 py-2 text-xs font-mono text-amber-300 outline-none" />
+          <button id="copyOfflineCodeBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs cursor-pointer">نسخ الكود</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Companies List -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-bold text-sm">📋 الشركات المسجلة وأكواد التفعيل الأوفلاين</h3>
+        <input id="cmpSearch" type="text" placeholder="بحث باسم الشركة أو البريد..." class="rounded-lg bg-slate-950 border border-slate-700 px-3 py-1 text-xs outline-none" />
+      </div>
+      <div id="companiesContainer" class="p-4 space-y-2.5 text-sm">
+        <p class="text-slate-400 text-xs">لا توجد شركات محفوظة محلياً بعد. أضف شركة من الأعلى أو استعد ملفاً من USB / SD.</p>
+      </div>
+    </section>
+
+    <!-- Optional Firebase Sync -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+      <h3 class="font-bold text-sm text-amber-300">🔗 مزامنة اختيارية مع Firebase (للمزامنة عند توفر الإنترنت فقط)</h3>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input id="masterFbUrl" type="url" dir="ltr" placeholder="https://your-project-default-rtdb.firebaseio.com" class="flex-1 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-amber-500" />
+        <button id="syncFbPushBtn" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shrink-0">رفع للسحابة</button>
+        <button id="syncFbPullBtn" type="button" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs cursor-pointer shrink-0">جلب من السحابة</button>
+      </div>
+    </section>
+
+    <!-- Error Logs -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-slate-800/80 flex items-center justify-between gap-2">
+        <h3 class="font-bold text-sm">🛠️ سجل الأعطال المحلي</h3>
+        <button id="clearLogsBtn" type="button" class="px-3 py-1 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 text-xs font-bold cursor-pointer">مسح السجل</button>
+      </div>
+      <div id="logsContainer" class="p-4 space-y-2 text-xs max-h-64 overflow-y-auto">
+        <p class="text-slate-400">لا توجد أعطال مسجلة ✓</p>
+      </div>
+    </section>
+
+  </main>
+
+  <input id="webFilePicker" type="file" accept=".json,application/json" class="hidden" />
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-amber-500 text-slate-950 text-xs font-bold shadow-lg opacity-0 pointer-events-none transition-opacity"></div>
+
+  <script>
+    (function () {
+      const PASS = 'Mohamad@0020w7H';
+      const STORAGE_KEY = 'ALKAK_ADMIN_LOCAL_DB_V1';
+      const SALT = 'ALKAK_OFFLINE_SALT_2026_MOHAMAD';
+
+      let adminDb = {
+        companies: [],
+        fbUrl: 'https://alkak-erp-default-rtdb.firebaseio.com',
+        logs: [],
+        updatedAt: Date.now()
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('opacity-0');
+        el.classList.add('opacity-100');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => {
+          el.classList.remove('opacity-100');
+          el.classList.add('opacity-0');
+        }, 2600);
+      }
+
+      function computeOfflineCode(email, pass) {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const cleanPass = (pass || '').trim();
+        const raw = `${cleanEmail}|${cleanPass}|${SALT}`;
+        let h1 = 0x811c9dc5;
+        let h2 = 0x01000193;
+        for (let i = 0; i < raw.length; i++) {
+          const ch = raw.charCodeAt(i);
+          h1 ^= ch;
+          h1 = Math.imul(h1, 0x01000193);
+          h2 = (Math.imul(h2, 31) + ch + i) >>> 0;
+        }
+        const p1 = (h1 >>> 0).toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+        const p2 = (h2 >>> 0).toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+        return `ALK-${p1}-${p2}`;
+      }
+      window.computeAlkCode = computeOfflineCode;
+
+      function saveLocalAdminDb() {
+        adminDb.updatedAt = Date.now();
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(adminDb)); } catch (e) {}
+        renderAll();
+      }
+
+      function loadLocalAdminDb() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+              adminDb = Object.assign({ companies: [], fbUrl: '', logs: [], updatedAt: Date.now() }, parsed);
+            }
+          }
+        } catch (e) {}
+        document.getElementById('masterFbUrl').value = adminDb.fbUrl || '';
+        renderAll();
+      }
+
+      function unlockAdmin() {
+        const val = document.getElementById('gatePass').value;
+        if (val !== PASS) return showToast('كلمة السر غير صحيحة');
+        document.getElementById('adminGate').classList.add('hidden');
+        renderAll();
+      }
+
+      document.getElementById('gateBtn').addEventListener('click', unlockAdmin);
+      document.getElementById('gatePass').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') unlockAdmin();
+      });
+
+      function clearCompanyForm() {
+        document.getElementById('editCompanyId').value = '';
+        document.getElementById('cmpName').value = '';
+        document.getElementById('cmpEmail').value = '';
+        document.getElementById('cmpPass').value = '';
+        document.getElementById('cmpStatus').value = 'active';
+        document.getElementById('generatedOfflineCode').value = '';
+      }
+
+      document.getElementById('clearCompanyFormBtn').addEventListener('click', clearCompanyForm);
+
+      document.getElementById('genCodeOnlyBtn').addEventListener('click', () => {
+        const email = document.getElementById('cmpEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('cmpPass').value.trim();
+        if (!email || !pass) return showToast('أدخل البريد الإلكتروني وكلمة سر المدير أولاً');
+        const code = computeOfflineCode(email, pass);
+        document.getElementById('generatedOfflineCode').value = code;
+        showToast('تم توليد كود التفعيل الأوفلاين ✓');
+      });
+
+      document.getElementById('copyOfflineCodeBtn').addEventListener('click', () => {
+        const val = document.getElementById('generatedOfflineCode').value.trim();
+        if (!val) return showToast('لا يوجد كود لنسخه');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(val).then(() => showToast('تم نسخ الكود ✓')).catch(() => showToast(val));
+        } else {
+          showToast(val);
+        }
+      });
+
+      document.getElementById('saveCompanyBtn').addEventListener('click', () => {
+        const editId = document.getElementById('editCompanyId').value.trim();
+        const name = document.getElementById('cmpName').value.trim();
+        const email = document.getElementById('cmpEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('cmpPass').value.trim();
+        const status = document.getElementById('cmpStatus').value;
+        if (!name || !email || !pass) return showToast('يرجى إدخال اسم الشركة والبريد الإلكتروني وكلمة سر المدير');
+
+        const offlineCode = computeOfflineCode(email, pass);
+        document.getElementById('generatedOfflineCode').value = offlineCode;
+
+        if (editId) {
+          const idx = adminDb.companies.findIndex(c => c.id === editId);
+          if (idx >= 0) {
+            adminDb.companies[idx] = Object.assign({}, adminDb.companies[idx], {
+              name, email, pass, status, offlineCode, updatedAt: Date.now()
+            });
+          }
+          showToast('تم تحديث بيانات الشركة والكود ✓');
+        } else {
+          const id = 'CMP_' + Date.now().toString(36).toUpperCase();
+          adminDb.companies.unshift({
+            id, name, email, pass, status, offlineCode,
+            createdAt: new Date().toISOString(),
+            updatedAt: Date.now()
+          });
+          showToast('تم إنشاء الشركة وتوليد كود التفعيل ✓');
+        }
+        clearCompanyForm();
+        saveLocalAdminDb();
+      });
+
+      window.editCompanyItem = function (id) {
+        const c = adminDb.companies.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('editCompanyId').value = c.id;
+        document.getElementById('cmpName').value = c.name;
+        document.getElementById('cmpEmail').value = c.email;
+        document.getElementById('cmpPass').value = c.pass;
+        document.getElementById('cmpStatus').value = c.status || 'active';
+        document.getElementById('generatedOfflineCode').value = c.offlineCode || computeOfflineCode(c.email, c.pass);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('عدّل بيانات الشركة ثم اضغط حفظ');
+      };
+
+      window.toggleCompanyStatus = function (id) {
+        const c = adminDb.companies.find(x => x.id === id);
+        if (!c) return;
+        c.status = (c.status === 'active') ? 'suspended' : 'active';
+        c.updatedAt = Date.now();
+        saveLocalAdminDb();
+        showToast(c.status === 'active' ? 'تم تفعيل الشركة ✓' : 'تم إيقاف الشركة ⛔');
+      };
+
+      window.deleteCompanyItem = function (id) {
+        adminDb.companies = adminDb.companies.filter(x => x.id !== id);
+        saveLocalAdminDb();
+        showToast('تم حذف الشركة');
+      };
+
+      window.copyRowCode = function (code) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(() => showToast('تم نسخ الكود: ' + code)).catch(() => showToast(code));
+        } else {
+          showToast(code);
+        }
+      };
+
+      function renderAll() {
+        const q = (document.getElementById('cmpSearch').value || '').trim().toLowerCase();
+        const list = adminDb.companies || [];
+        document.getElementById('statTotal').textContent = list.length;
+        document.getElementById('statActive').textContent = list.filter(c => c.status === 'active').length;
+        document.getElementById('statBlocked').textContent = list.filter(c => c.status !== 'active').length;
+
+        const filtered = list.filter(c =>
+          !q ||
+          (c.name || '').toLowerCase().includes(q) ||
+          (c.email || '').toLowerCase().includes(q) ||
+          (c.offlineCode || '').toLowerCase().includes(q)
+        );
+
+        const box = document.getElementById('companiesContainer');
+        if (!filtered.length) {
+          box.innerHTML = '<p class="text-slate-400 text-xs">لا توجد شركات مطابقة.</p>';
+        } else {
+          box.innerHTML = filtered.map(c => {
+            const isAct = c.status === 'active';
+            const badge = isAct
+              ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">مفعّلة ✓</span>'
+              : '<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-bold">موقوفة ⛔</span>';
+            const code = c.offlineCode || computeOfflineCode(c.email, c.pass);
+            return `
+              <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/70">
+                <div class="space-y-1">
+                  <div class="font-bold text-white flex items-center gap-2 flex-wrap">
+                    <span>${c.name}</span> ${badge}
+                  </div>
+                  <div class="text-xs text-slate-300">البريد: <span dir="ltr" class="font-mono text-amber-200">${c.email}</span> | كلمة سر المدير: <span dir="ltr" class="font-mono text-emerald-300">${c.pass}</span></div>
+                  <div class="text-xs text-amber-300">كود الأوفلاين: <span dir="ltr" class="font-mono font-bold">${code}</span></div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button type="button" onclick="copyRowCode('${code}')" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold cursor-pointer">نسخ الكود</button>
+                  <button type="button" onclick="toggleCompanyStatus('${c.id}')" class="px-2.5 py-1 rounded-lg ${isAct ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white text-xs font-bold cursor-pointer">${isAct ? 'إيقاف' : 'تفعيل'}</button>
+                  <button type="button" onclick="editCompanyItem('${c.id}')" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold cursor-pointer">تعديل</button>
+                  <button type="button" onclick="deleteCompanyItem('${c.id}')" class="px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold cursor-pointer">حذف</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        const logs = adminDb.logs || [];
+        document.getElementById('statErrors').textContent = logs.length;
+        const logsBox = document.getElementById('logsContainer');
+        if (!logs.length) {
+          logsBox.innerHTML = '<p class="text-slate-400">لا توجد أعطال مسجلة ✓</p>';
+        } else {
+          logsBox.innerHTML = logs.map(l => `
+            <div class="p-2.5 rounded-lg bg-slate-800/70 border border-rose-500/20">
+              <div class="font-bold text-rose-300">${l.time || ''}</div>
+              <div class="text-slate-200 mt-0.5" dir="ltr">${l.msg || ''}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      document.getElementById('cmpSearch').addEventListener('input', renderAll);
+
+      // USB / SD Direct File Save & Restore
+      function buildExportPayload() {
+        return JSON.stringify({
+          app: 'ALKAK_ADMIN_DB',
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          data: adminDb
+        }, null, 2);
+      }
+
+      function applyImportedPayload(rawText) {
+        try {
+          const parsed = JSON.parse(rawText);
+          const payload = parsed && parsed.data ? parsed.data : parsed;
+          if (!payload || !Array.isArray(payload.companies)) {
+            return showToast('ملف النسخة غير صالح');
+          }
+          adminDb = Object.assign({ companies: [], fbUrl: '', logs: [], updatedAt: Date.now() }, payload);
+          document.getElementById('masterFbUrl').value = adminDb.fbUrl || '';
+          saveLocalAdminDb();
+          showToast('تمت استعادة بيانات الشركات بنجاح ✓');
+        } catch (e) {
+          showToast('تعذر قراءة ملف JSON');
+        }
+      }
+
+      window.onNativeSaveResult = function (ok, msg) {
+        showToast(msg || (ok ? 'تم الحفظ بنجاح ✓' : 'تعذر الحفظ'));
+      };
+      window.onNativeFileLoaded = function (content) {
+        applyImportedPayload(content);
+      };
+
+      document.getElementById('usbSaveBtn').addEventListener('click', () => {
+        const fname = `ALKAK_Admin_Companies_${new Date().toISOString().slice(0, 10)}.json`;
+        const content = buildExportPayload();
+        if (window.AndroidStorage && window.AndroidStorage.isAvailable()) {
+          window.AndroidStorage.saveJsonToUsbOrSd(fname, content);
+        } else {
+          const blob = new Blob([content], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = fname;
+          a.click();
+          showToast('تم تصدير الملف ✓');
+        }
+      });
+
+      document.getElementById('usbFolderBtn').addEventListener('click', () => {
+        const fname = `ALKAK_Admin_Companies_${new Date().toISOString().slice(0, 10)}.json`;
+        const content = buildExportPayload();
+        if (window.AndroidStorage && window.AndroidStorage.isAvailable()) {
+          window.AndroidStorage.saveJsonToFolder(fname, content);
+        } else {
+          showToast('اختيار المجلد المباشر متاح داخل تطبيق APK على أندرويد');
+        }
+      });
+
+      document.getElementById('usbLoadBtn').addEventListener('click', () => {
+        if (window.AndroidStorage && window.AndroidStorage.isAvailable()) {
+          window.AndroidStorage.pickJsonFromUsbOrSd();
+        } else {
+          document.getElementById('webFilePicker').click();
+        }
+      });
+
+      document.getElementById('webFilePicker').addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => applyImportedPayload(ev.target.result);
+        r.readAsText(f);
+      });
+
+      // Optional Firebase sync
+      document.getElementById('syncFbPushBtn').addEventListener('click', async () => {
+        const u = document.getElementById('masterFbUrl').value.trim().replace(/\/+$/, '');
+        if (!u.startsWith('https://')) return showToast('أدخل رابط Firebase صحيح');
+        adminDb.fbUrl = u;
+        saveLocalAdminDb();
+        try {
+          await fetch(`${u}/alkak_admin_companies.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(adminDb.companies)
+          });
+          showToast('تم رفع قائمة الشركات للسحابة ✓');
+        } catch (e) {
+          showToast('تعذر الاتصال بالسحابة');
+        }
+      });
+
+      document.getElementById('syncFbPullBtn').addEventListener('click', async () => {
+        const u = document.getElementById('masterFbUrl').value.trim().replace(/\/+$/, '');
+        if (!u.startsWith('https://')) return showToast('أدخل رابط Firebase صحيح');
+        adminDb.fbUrl = u;
+        try {
+          const res = await fetch(`${u}/alkak_admin_companies.json`);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            adminDb.companies = data;
+            saveLocalAdminDb();
+            showToast('تم جلب الشركات من السحابة ✓');
+          } else {
+            showToast('لا توجد بيانات في السحابة');
+          }
+        } catch (e) {
+          showToast('تعذر جلب البيانات من السحابة');
+        }
+      });
+
+      document.getElementById('clearLogsBtn').addEventListener('click', () => {
+        adminDb.logs = [];
+        saveLocalAdminDb();
+        showToast('تم مسح السجل');
+      });
+
+      document.getElementById('refreshAllBtn').addEventListener('click', () => {
+        loadLocalAdminDb();
+        showToast('تم تحديث البيانات المحلية ✓');
+      });
+
+      loadLocalAdminDb();
+    })();
+  </script>
+</body>
+</html>
